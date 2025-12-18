@@ -12,7 +12,14 @@ fi
 
 QEMU_DEST="$TARGET_DIR/usr/bin/$(basename "$QEMU_BIN")"
 install -D "$QEMU_BIN" "$QEMU_DEST"
-cp /etc/resolv.conf "$TARGET_DIR/etc/resolv.conf"
+
+RESOLV_SRC="/etc/resolv.conf"
+[ -e "$RESOLV_SRC" ] || RESOLV_SRC="/run/systemd/resolve/resolv.conf"
+if [ -e "$RESOLV_SRC" ]; then
+	cp "$RESOLV_SRC" "$TARGET_DIR/etc/resolv.conf"
+else
+	echo -e "nameserver 8.8.8.8\n" > "$TARGET_DIR/etc/resolv.conf"
+fi
 
 mount -t proc proc "$TARGET_DIR/proc"
 mount -t sysfs sys "$TARGET_DIR/sys"
