@@ -15,6 +15,10 @@ install -D "$QEMU_BIN" "$QEMU_DEST"
 
 RESOLV_SRC="/etc/resolv.conf"
 [ -e "$RESOLV_SRC" ] || RESOLV_SRC="/run/systemd/resolve/resolv.conf"
+if [ -L "$TARGET_DIR/etc/resolv.conf" ]; then
+	rm -f "$TARGET_DIR/etc/resolv.conf"
+fi
+mkdir -p "$TARGET_DIR/etc"
 if [ -e "$RESOLV_SRC" ]; then
 	cp "$RESOLV_SRC" "$TARGET_DIR/etc/resolv.conf"
 else
