@@ -382,7 +382,12 @@ build_wifibt()
 
 	if [[ "$RK_WIFIBT_MODULES" =~ "AIC" ]]; then
 		echo "Copy AIC file to rootfs"
-		KVER=$(basename "$(find "$TARGET_DIR/lib/modules" -maxdepth 1 -type d | head -n1)")
+		# Prefer existing module dir; otherwise fall back to the kernel version
+		# we are building. Create the directory so depmod and cp do not fail.
+		KVER=$(find "$TARGET_DIR/lib/modules" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | head -n1)
+		[ -z "$KVER" ] && KVER="${RK_KERNEL_VERSION_RAW:-${RK_KERNEL_VERSION:-6.1.99}}"
+		mkdir -p "$TARGET_DIR/lib/modules/$KVER"
+
 		# modules built in-tree under external/rkwifibt
 		if [ -d "$RKWIFIBT_DIR/drivers/aic8800/aic8800/aic_load_fw" ]; then
 			cp "$RKWIFIBT_DIR"/drivers/aic8800/aic8800/aic_load_fw/*.ko \
@@ -392,6 +397,7 @@ build_wifibt()
 			cp "$RKWIFIBT_DIR"/drivers/aic8800/aic8800/aic8800_fdrv/*.ko \
 				"$TARGET_DIR/lib/modules/$KVER/" 2>/dev/null || true
 		fi
+
 		# Firmware
 		mkdir -p "$TARGET_DIR/lib/firmware/aicsemi"
 		if [ -d "$RK_OUTDIR/kernel-modules/lib/firmware/aicsemi" ]; then
