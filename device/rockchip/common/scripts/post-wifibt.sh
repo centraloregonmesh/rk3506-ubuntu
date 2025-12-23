@@ -375,6 +375,27 @@ build_wifibt()
 		cp $RKWIFIBT_DIR/drivers/bcmdhd/*.ko $TARGET_DIR/lib/modules/
 	fi
 
+	if [[ "$RK_WIFIBT_MODULES" =~ "AIC" ]]; then
+		echo "Copy AIC file to rootfs"
+		# Modules built via build-hook into output/kernel-modules
+		KVER=$(basename "$(find "$RK_OUTDIR/kernel-modules/lib/modules" -maxdepth 1 -type d | head -n1)")
+		if [ -n "$KVER" ]; then
+			SRC="$RK_OUTDIR/kernel-modules/lib/modules/$KVER/extra/aic8800"
+			if [ -d "$SRC" ]; then
+				cp "$SRC"/*.ko "$TARGET_DIR/lib/modules/" || true
+			fi
+		fi
+		# Firmware
+		if [ -d "$RK_OUTDIR/kernel-modules/lib/firmware/aicsemi" ]; then
+			cp -r "$RK_OUTDIR/kernel-modules/lib/firmware/aicsemi/"* \
+				"$TARGET_DIR/lib/firmware/aicsemi/" 2>/dev/null || true
+		fi
+		if [ -d "$RKWIFIBT_DIR/firmware/aicsemi" ]; then
+			cp -r "$RKWIFIBT_DIR/firmware/aicsemi/"* \
+				"$TARGET_DIR/lib/firmware/aicsemi/" 2>/dev/null || true
+		fi
+	fi
+
 	# Install boot services
 	install_sysv_service $RKWIFIBT_DIR/S36wifibt-init.sh S
 	install_busybox_service $RKWIFIBT_DIR/S36wifibt-init.sh
