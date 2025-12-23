@@ -377,6 +377,12 @@ build_wifibt()
 
 	if [[ "$RK_WIFIBT_MODULES" =~ "AIC" ]]; then
 		echo "Copy AIC file to rootfs"
+		# Ensure AIC modules are built into output/kernel-modules
+		if [ ! -d "$RK_OUTDIR/kernel-modules/lib/modules" ]; then
+			if [ -x "$RK_BUILD_HOOK_DIR/91-aic8800.sh" ]; then
+				bash "$RK_BUILD_HOOK_DIR/91-aic8800.sh" aic8800-modules
+			fi
+		fi
 		# Modules built via build-hook into output/kernel-modules
 		KVER=$(basename "$(find "$RK_OUTDIR/kernel-modules/lib/modules" -maxdepth 1 -type d | head -n1)")
 		if [ -n "$KVER" ]; then
