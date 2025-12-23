@@ -24,11 +24,19 @@ build_hook() {
     make KDIR="$RK_SDK_DIR/kernel-6.1" ARCH=arm \
         CROSS_COMPILE="$RK_SDK_DIR/prebuilts/gcc/linux-x86/arm/gcc-arm-10.3-2021.07-x86_64-arm-none-linux-gnueabihf/bin/arm-none-linux-gnueabihf-" \
         modules
-    # Install into the rootfs staging modules dir
-    MODDESTDIR="$RK_SDK_DIR/output/kernel-modules/lib/modules/$(kernel_version)"
-    mkdir -p "$MODDESTDIR/kernel/drivers/net/wireless/aic8800"
-    install -p -m 644 aic_load_fw/aic_load_fw.ko "$MODDESTDIR/kernel/drivers/net/wireless/aic8800/"
-    install -p -m 644 aic8800_fdrv/aic8800_fdrv.ko "$MODDESTDIR/kernel/drivers/net/wireless/aic8800/"
+    # Install into the modules/firmware staging tree for rootfs
+    KVER="$(kernel_version)"
+    MODDEST="$RK_OUTDIR/kernel-modules/lib/modules/$KVER/extra/aic8800"
+    mkdir -p "$MODDEST"
+    install -p -m 644 aic_load_fw/aic_load_fw.ko "$MODDEST/"
+    install -p -m 644 aic8800_fdrv/aic8800_fdrv.ko "$MODDEST/"
+
+    # Firmware
+    FWDEST="$RK_OUTDIR/kernel-modules/lib/firmware/aicsemi"
+    mkdir -p "$FWDEST"
+    if [ -d "$RK_SDK_DIR/external/rkwifibt/firmware/aicsemi" ]; then
+        cp -r "$RK_SDK_DIR/external/rkwifibt/firmware/aicsemi/"* "$FWDEST/" 2>/dev/null || true
+    fi
     popd >/dev/null
 
     finish_build aic8800-modules
