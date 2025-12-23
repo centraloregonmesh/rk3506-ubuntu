@@ -220,6 +220,11 @@ build_wifibt()
 		$KMAKE M=$RKWIFIBT_DIR/drivers/infineon
 	fi
 
+	if [[ "$RK_WIFIBT_MODULES" =~ "AIC" ]]; then
+		echo "building AIC8800"
+		$KMAKE M=$RKWIFIBT_DIR/drivers/aic8800/aic8800 modules
+	fi
+
 	if [[ "$RK_WIFIBT_MODULES" = "RTL8188FU" ]];then
 		echo "building rtl8188fu driver"
 		$KMAKE M=$RKWIFIBT_DIR/drivers/rtl8188fu modules
@@ -377,21 +382,18 @@ build_wifibt()
 
 	if [[ "$RK_WIFIBT_MODULES" =~ "AIC" ]]; then
 		echo "Copy AIC file to rootfs"
-		# Ensure AIC modules are built into output/kernel-modules
-		if [ ! -d "$RK_OUTDIR/kernel-modules/lib/modules" ]; then
-			if [ -x "$RK_BUILD_HOOK_DIR/91-aic8800.sh" ]; then
-				bash "$RK_BUILD_HOOK_DIR/91-aic8800.sh" aic8800-modules
-			fi
+		KVER=$(basename "$(find "$TARGET_DIR/lib/modules" -maxdepth 1 -type d | head -n1)")
+		# modules built in-tree under external/rkwifibt
+		if [ -d "$RKWIFIBT_DIR/drivers/aic8800/aic8800/aic_load_fw" ]; then
+			cp "$RKWIFIBT_DIR"/drivers/aic8800/aic8800/aic_load_fw/*.ko \
+				"$TARGET_DIR/lib/modules/$KVER/" 2>/dev/null || true
 		fi
-		# Modules built via build-hook into output/kernel-modules
-		KVER=$(basename "$(find "$RK_OUTDIR/kernel-modules/lib/modules" -maxdepth 1 -type d | head -n1)")
-		if [ -n "$KVER" ]; then
-			SRC="$RK_OUTDIR/kernel-modules/lib/modules/$KVER/extra/aic8800"
-			if [ -d "$SRC" ]; then
-				cp "$SRC"/*.ko "$TARGET_DIR/lib/modules/" || true
-			fi
+		if [ -d "$RKWIFIBT_DIR/drivers/aic8800/aic8800/aic8800_fdrv" ]; then
+			cp "$RKWIFIBT_DIR"/drivers/aic8800/aic8800/aic8800_fdrv/*.ko \
+				"$TARGET_DIR/lib/modules/$KVER/" 2>/dev/null || true
 		fi
 		# Firmware
+		mkdir -p "$TARGET_DIR/lib/firmware/aicsemi"
 		if [ -d "$RK_OUTDIR/kernel-modules/lib/firmware/aicsemi" ]; then
 			cp -r "$RK_OUTDIR/kernel-modules/lib/firmware/aicsemi/"* \
 				"$TARGET_DIR/lib/firmware/aicsemi/" 2>/dev/null || true
