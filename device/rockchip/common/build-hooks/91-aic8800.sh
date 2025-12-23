@@ -3,8 +3,6 @@
 # Build and install AIC8800 WiFi modules into the kernel modules install path.
 # Assumes RK_KERNEL_VERSION points to the active kernel build dir (kernel-6.1).
 
-source "${RK_BUILD_HELPER:-$(dirname "$(realpath "$0")")/build-helper}"
-
 usage_hook() {
     usage_oneline "aic8800-modules" "build and install AIC8800 WiFi modules"
 }
@@ -44,6 +42,3 @@ build_hook() {
 }
 
 source "${RK_BUILD_HELPER:-$(dirname "$(realpath "$0")")/build-helper}"
-
-# Run by default
-build_hook "$@"
