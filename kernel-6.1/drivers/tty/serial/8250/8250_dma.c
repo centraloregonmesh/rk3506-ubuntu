@@ -185,6 +185,27 @@ err:
 	return ret;
 }
 
+void serial8250_tx_dma_flush(struct uart_8250_port *p)
+{
+	struct uart_8250_dma *dma = p->dma;
+
+	if (!dma->tx_running)
+		return;
+
+	/*
+	 * kfifo_reset() has been called by the serial core, avoid advancing and
+	 * underflowing in __dma_tx_complete().
+	 */
+	dma->tx_size = 0;
+
+	/*
+	 * The caller holds the uart port spinlock, so terminate asynchronously
+	 * and mark the transaction stopped before a new TX DMA is queued.
+	 */
+	dmaengine_terminate_async(dma->txchan);
+	dma->tx_running = 0;
+}
+
 #if defined(CONFIG_ARCH_ROCKCHIP) && defined(CONFIG_NO_GKI)
 
 int serial8250_rx_dma(struct uart_8250_port *p)

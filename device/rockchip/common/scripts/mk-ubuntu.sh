@@ -31,7 +31,7 @@ fi
 mkdir -p "$SRC_DIR"
 
 # build ubuntu target
-tar -xvf "$UBUNTU_DIR/ubuntu_24.04.3.tar.gz" -C "$SRC_DIR"
+tar -xf "$UBUNTU_DIR/ubuntu_24.04.3.tar.gz" -C "$SRC_DIR"
 
 # post build target
 mkdir -p "$SRC_DIR/lib/modules"
@@ -43,14 +43,12 @@ chmod -R a+wX "$SRC_DIR/lib/modules"
 rm -rf "$IMAGE_DIR"
 mkdir -p "$IMAGE_DIR"
 
-SRC_SIZE=$(du -sb "$SRC_DIR" | awk '{print $1}')
-DST_SIZE="$(( (SRC_SIZE * 12 / 10 + 1024 - 1) / 1024 / 1024 ))M"
+DST_SIZE="${RK_UBUNTU_EXT4_SIZE:-2048M}"
 
-RUN_NOTICE "mkfs.ext4 -d $SRC_DIR -r 1 -N 0 -m 5 -L \"\" -O ^64bit,^huge_file $EXT4_IMAGE "$DST_SIZE""
-RUN_NOTICE "resize2fs -M $EXT4_IMAGE"
+RUN_NOTICE "mkfs.ext4 -d $SRC_DIR -r 1 -N 0 -m 0 -L \"\" -O ^64bit,^huge_file $EXT4_IMAGE "$DST_SIZE""
 RUN_NOTICE "e2fsck -fy  $EXT4_IMAGE"
-RUN_NOTICE "tune2fs -m 5  $EXT4_IMAGE"
-RUN_NOTICE "resize2fs -M $EXT4_IMAGE"
+RUN_NOTICE "tune2fs -m 0  $EXT4_IMAGE"
+RUN_NOTICE "e2fsck -fy  $EXT4_IMAGE"
 
 # Use ubuntu output dir as image output dir
 rm -rf "$ROOTFS_OUTPUT_DIR"

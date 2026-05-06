@@ -13,6 +13,7 @@ if [ "$RK_ROOTFS_STRIP_MODULES" ]; then
 
 	source "$RK_SCRIPTS_DIR/kernel-helper"
 
-	find "$TARGET_DIR" -name "*.ko" \
+	find "$TARGET_DIR/lib/modules" "$TARGET_DIR/usr/lib/modules" \
+		-type f -name "*.ko" 2>/dev/null \
 		-exec ${RK_KERNEL_TOOLCHAIN}strip --strip-unneeded -v {} \;
 fi

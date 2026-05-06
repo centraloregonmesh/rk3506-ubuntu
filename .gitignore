@@ -1,2 +1,11 @@
 *.7z
 *.gz
+/output/
+/ubuntu/
+/rockdev
+/.codex
+/rkbin/tools/log/
+/kernel-6.*/boot.img
+/kernel-6.*/zboot*.img
+/kernel-6.*/resource.img
+/kernel-6.*/output/

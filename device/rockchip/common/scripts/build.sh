@@ -428,10 +428,12 @@ check_sdk() {
 parse_scripts()
 {
 	mkdir -p "$RK_OUTDIR"
+	KERNEL_DIRS="$(find "$RK_SDK_DIR" -maxdepth 1 -type d \
+		-name 'kernel-*' 2>/dev/null || true)"
 
 	if [ ! -r "$RK_MAKE_USAGE" ] || \
 		[ "$(find "$RK_SCRIPTS_DIR" "$RK_CHIP_DIR" "$RK_CHIP_DIR/" \
-			-cnewer "$RK_MAKE_USAGE")" ]; then
+			$KERNEL_DIRS -cnewer "$RK_MAKE_USAGE")" ]; then
 		{
 			TEMP_FILE=$(mktemp -u)
 
@@ -451,7 +453,7 @@ parse_scripts()
 
 	if [ ! -r "$RK_PARSED_CMDS" ] || \
 		[ "$(find "$RK_SCRIPTS_DIR" "$RK_CHIP_DIR" "$RK_CHIP_DIR/" \
-			-cnewer "$RK_PARSED_CMDS")" ]; then
+			$KERNEL_DIRS -cnewer "$RK_PARSED_CMDS")" ]; then
 		{
 			TEMP_FILE=$(mktemp -u)
 			{

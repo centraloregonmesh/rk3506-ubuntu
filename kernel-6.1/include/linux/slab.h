@@ -216,7 +216,9 @@ size_t ksize(const void *objp);
 
 #ifdef CONFIG_PRINTK
 bool kmem_valid_obj(void *object);
-void kmem_dump_obj(void *object);
+bool kmem_dump_obj(void *object);
+#else
+static inline bool kmem_dump_obj(void *object) { return false; }
 #endif
 
 /*

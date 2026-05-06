@@ -70,6 +70,10 @@ do_build()
 			;;
 		kernel-modules | modules)
 			MOD_DIR="${2:-$RK_OUTDIR/kernel-modules}"
+			case "$MOD_DIR" in
+				/*) ;;
+				*) MOD_DIR="$RK_SDK_DIR/$MOD_DIR" ;;
+			esac
 			run_command $KMAKE modules
 			run_command $KMAKE modules_install \
 				INSTALL_MOD_PATH="$MOD_DIR"
