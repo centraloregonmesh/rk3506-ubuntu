@@ -67,9 +67,8 @@ Milestones:
    modules enabled.
 2. Done: `kernel-6.12/zboot.img` is produced through the SDK path with
    modules enabled.
-3. Done: matching in-tree modules are staged under
-   `output/kernel-modules-6.6/lib/modules/6.6.137-dirty` and
-   `output/kernel-modules-6.12/lib/modules/6.12.85-dirty`.
+3. Done: matching in-tree modules build for 6.6 and 6.12; the current clean
+   Lyra Ultra Ubuntu image installs 6.12 modules under `/lib/modules/6.12.85`.
 4. Done: AIC8800 `aic_load_fw.ko` and `aic8800_fdrv.ko` build and install into
    both staged module trees, with `modules.dep` refreshed by `depmod`.
 5. Done: Docker/containerd/Podman kernel support is enabled in the 6.1, 6.6,
