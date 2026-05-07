@@ -4,7 +4,7 @@ set -euo pipefail
 usage()
 {
 	cat <<'EOF'
-Usage: tools/prepare-lts-kernel.sh <6.6|6.12> [repo-url]
+Usage: tools/prepare-lts-kernel.sh <6.6|6.12|6.18> [repo-url]
 
 Creates kernel-<version> from the upstream stable branch so the Rockchip SDK can
 select it with ./build.sh kernel-<version>. This is only a starting tree; RK3506
@@ -13,11 +13,12 @@ BSP patches, DTS files, configs, and out-of-tree modules still need porting.
 Examples:
   tools/prepare-lts-kernel.sh 6.6
   tools/prepare-lts-kernel.sh 6.12
+  tools/prepare-lts-kernel.sh 6.18
 EOF
 }
 
 case "${1:-}" in
-	6.6 | 6.12) VERSION="$1" ;;
+	6.6 | 6.12 | 6.18) VERSION="$1" ;;
 	-h | --help | "") usage; exit 0 ;;
 	*) echo "Unsupported kernel line: $1" >&2; usage >&2; exit 1 ;;
 esac

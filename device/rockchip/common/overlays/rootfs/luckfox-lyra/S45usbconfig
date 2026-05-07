@@ -4,7 +4,6 @@ case "$1" in
 	start)
 		if [ ! -f /etc/.usb_config ]; then
 			echo "usb_rndis_en" >> /etc/.usb_config
-			echo "usb_adb_en" >> /etc/.usb_config
 		fi
 		;;
 	*)

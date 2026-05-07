@@ -3,26 +3,33 @@
 #include <linux/platform_device.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
 #include <linux/pm_wakeirq.h>
-#else
-#include <linux/pm_wakeup.h>
 #endif
+#include <linux/pm_wakeup.h>
 #include "rwnx_defs.h"
 #include "rwnx_wakelock.h"
 
 struct wakeup_source *rwnx_wakeup_init(const char *name)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
+	return wakeup_source_register(NULL, name);
+#else
 	struct wakeup_source *ws;
 	ws = wakeup_source_create(name);
 	wakeup_source_add(ws);
 	return ws;
+#endif
 }
 
 void rwnx_wakeup_deinit(struct wakeup_source *ws)
 {
 	if (ws && ws->active)
 		__pm_relax(ws);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
+	wakeup_source_unregister(ws);
+#else
 	wakeup_source_remove(ws);
 	wakeup_source_destroy(ws);
+#endif
 }
 
 struct wakeup_source *rwnx_wakeup_register(struct device *dev, const char *name)

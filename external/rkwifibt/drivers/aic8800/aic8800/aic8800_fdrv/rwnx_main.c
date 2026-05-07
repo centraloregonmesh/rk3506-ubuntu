@@ -22,6 +22,8 @@
 #include <linux/if_arp.h>
 #include <linux/ctype.h>
 #include <linux/random.h>
+#include <linux/timer.h>
+#include <linux/version.h>
 #include "rwnx_defs.h"
 #include "rwnx_dini.h"
 #include "rwnx_msg_tx.h"
@@ -65,6 +67,14 @@
 
 #define RWNX_PRINT_CFM_ERR(req) \
 	printk(KERN_CRIT "%s: Status Error(%d)\n", #req, (&req##_cfm)->status)
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0)
+#ifndef from_timer
+#define from_timer(var, callback_timer, timer_fieldname) \
+	timer_container_of(var, callback_timer, timer_fieldname)
+#endif
+#define del_timer_sync(timer) timer_delete_sync(timer)
+#endif
 
 #define RWNX_HT_CAPABILITIES                                                  \
 	{                                                                     \
@@ -553,9 +563,6 @@ void rwnx_skb_align_8bytes(struct sk_buff *skb)
 	}
 #endif
 }
-
-int rwnx_init_cmd_array(void);
-void rwnx_free_cmd_array(void);
 
 void rwnx_data_dump(char *tag, void *data, unsigned long len)
 {
@@ -1945,7 +1952,7 @@ static struct rwnx_vif *rwnx_interface_add(struct rwnx_hw *rwnx_hw,
 		vif->ap.generation = 0;
 		vif->ap.mesh_pm = NL80211_MESH_POWER_ACTIVE;
 		vif->ap.next_mesh_pm = NL80211_MESH_POWER_ACTIVE;
-		// no break
+		fallthrough;
 	case NL80211_IFTYPE_AP:
 		INIT_LIST_HEAD(&vif->ap.sta_list);
 		memset(&vif->ap.bcn, 0, sizeof(vif->ap.bcn));
@@ -2424,7 +2431,7 @@ static int rwnx_cfg80211_change_iface(struct wiphy *wiphy,
 		INIT_LIST_HEAD(&vif->ap.proxy_list);
 		vif->ap.create_path = false;
 		vif->ap.generation = 0;
-		// no break
+		fallthrough;
 	case NL80211_IFTYPE_AP:
 	case NL80211_IFTYPE_P2P_GO:
 		INIT_LIST_HEAD(&vif->ap.sta_list);
@@ -4091,6 +4098,9 @@ cfg80211_chandef_identical(const struct cfg80211_chan_def *chandef1,
 #endif
 
 static int rwnx_cfg80211_set_monitor_channel(struct wiphy *wiphy,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 18, 0)
+					     struct net_device *dev,
+#endif
 					     struct cfg80211_chan_def *chandef)
 {
 	struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
@@ -4146,7 +4156,11 @@ static int rwnx_cfg80211_set_monitor_channel(struct wiphy *wiphy,
 int rwnx_cfg80211_set_monitor_channel_(struct wiphy *wiphy,
 				       struct cfg80211_chan_def *chandef)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 18, 0)
+	return rwnx_cfg80211_set_monitor_channel(wiphy, NULL, chandef);
+#else
 	return rwnx_cfg80211_set_monitor_channel(wiphy, chandef);
+#endif
 }
 
 /**
@@ -4207,7 +4221,11 @@ void rwnx_cfg80211_mgmt_frame_register(struct wiphy *wiphy,
  *	have changed. The actual parameter values are available in
  *	struct wiphy. If returning an error, no value should be changed.
  */
-static int rwnx_cfg80211_set_wiphy_params(struct wiphy *wiphy, u32 changed)
+static int rwnx_cfg80211_set_wiphy_params(struct wiphy *wiphy,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 18, 0)
+					  int radio_idx,
+#endif
+					  u32 changed)
 {
 	return 0;
 }
@@ -4222,6 +4240,9 @@ static int rwnx_cfg80211_set_wiphy_params(struct wiphy *wiphy, u32 changed)
 static int rwnx_cfg80211_set_tx_power(struct wiphy *wiphy,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
 				      struct wireless_dev *wdev,
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 18, 0)
+				      int radio_idx,
 #endif
 				      enum nl80211_tx_power_setting type,
 				      int mbm)
@@ -4628,7 +4649,11 @@ static int rwnx_cfg80211_get_channel(struct wiphy *wiphy,
 
 	if (rwnx_vif->vif_index == rwnx_hw->monitor_vif) {
 		//retrieve channel from firmware
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 18, 0)
+		rwnx_cfg80211_set_monitor_channel(wiphy, NULL, NULL);
+#else
 		rwnx_cfg80211_set_monitor_channel(wiphy, NULL);
+#endif
 	}
 
 	//Check if channel context is valid
@@ -7439,7 +7464,11 @@ static void __exit rwnx_mod_exit(void)
 module_init(rwnx_mod_init);
 module_exit(rwnx_mod_exit);
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0)
+MODULE_IMPORT_NS("VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver");
+#else
 MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
+#endif
 #endif
 MODULE_FIRMWARE(RWNX_CONFIG_FW_NAME);
 

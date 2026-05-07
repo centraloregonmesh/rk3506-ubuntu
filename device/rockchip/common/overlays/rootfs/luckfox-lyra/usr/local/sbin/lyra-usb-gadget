@@ -1,0 +1,139 @@
+#!/bin/sh
+
+set -eu
+
+CONFIGFS_DIR=/sys/kernel/config
+GADGET_NAME=rockchip
+GADGET_DIR="${CONFIGFS_DIR}/usb_gadget/${GADGET_NAME}"
+STRINGS_DIR="${GADGET_DIR}/strings/0x409"
+CONFIG_DIR="${GADGET_DIR}/configs/b.1"
+CONFIG_STRINGS_DIR="${CONFIG_DIR}/strings/0x409"
+FUNCTION_DIR="${GADGET_DIR}/functions/rndis.usb0"
+USB_ADDR=192.168.123.100/24
+
+mac_from_seed()
+{
+	seed="$1"
+	first="$2"
+	hash="$(printf '%s' "${seed}" | sha256sum | awk '{ print $1 }')"
+	printf '%s:%s:%s:%s:%s:%s\n' \
+		"${first}" \
+		"$(printf '%s' "${hash}" | cut -c1-2)" \
+		"$(printf '%s' "${hash}" | cut -c3-4)" \
+		"$(printf '%s' "${hash}" | cut -c5-6)" \
+		"$(printf '%s' "${hash}" | cut -c7-8)" \
+		"$(printf '%s' "${hash}" | cut -c9-10)"
+}
+
+mount_configfs()
+{
+	mountpoint -q "${CONFIGFS_DIR}" || mount -t configfs none "${CONFIGFS_DIR}"
+}
+
+load_modules()
+{
+	modprobe libcomposite 2>/dev/null || true
+	modprobe usb_f_rndis 2>/dev/null || true
+}
+
+first_udc()
+{
+	ls /sys/class/udc 2>/dev/null | head -n 1
+}
+
+configure_usb0()
+{
+	for _i in $(seq 1 50); do
+		[ -d /sys/class/net/usb0 ] && break
+		sleep 0.1
+	done
+
+	[ -d /sys/class/net/usb0 ] || return 0
+
+	ip addr replace "${USB_ADDR}" dev usb0 2>/dev/null || true
+	ip link set usb0 up 2>/dev/null || true
+}
+
+write_if_present()
+{
+	[ -e "$2" ] || return 0
+	echo "$1" > "$2"
+}
+
+start_gadget()
+{
+	load_modules
+	mount_configfs
+
+	UDC="$(first_udc)"
+	if [ -z "${UDC}" ]; then
+		echo "lyra-usb-gadget: no UDC available" >&2
+		return 0
+	fi
+
+	if [ -d "${GADGET_DIR}" ] && [ -s "${GADGET_DIR}/UDC" ]; then
+		configure_usb0
+		return 0
+	fi
+
+	mkdir -p "${GADGET_DIR}"
+	echo 0x2207 > "${GADGET_DIR}/idVendor"
+	echo 0x0013 > "${GADGET_DIR}/idProduct"
+	echo 0x0310 > "${GADGET_DIR}/bcdDevice"
+	echo 0x0200 > "${GADGET_DIR}/bcdUSB"
+
+	mkdir -p "${STRINGS_DIR}"
+	SERIAL="$(awk '/Serial/ { print $3 }' /proc/cpuinfo | head -n 1)"
+	[ -n "${SERIAL}" ] || SERIAL=0123456789ABCDEF
+	echo "${SERIAL}" > "${STRINGS_DIR}/serialnumber"
+	echo rockchip > "${STRINGS_DIR}/manufacturer"
+	echo rk3xxx > "${STRINGS_DIR}/product"
+
+	mkdir -p "${CONFIG_STRINGS_DIR}"
+	echo rndis > "${CONFIG_STRINGS_DIR}/configuration"
+	echo 500 > "${CONFIG_DIR}/MaxPower"
+
+	mkdir -p "${FUNCTION_DIR}"
+	DEV_ADDR="$(mac_from_seed "lyra-rndis-device-${SERIAL}" 02)"
+	HOST_ADDR="$(mac_from_seed "lyra-rndis-host-${SERIAL}" 06)"
+	write_if_present "${DEV_ADDR}" "${FUNCTION_DIR}/dev_addr"
+	write_if_present "${HOST_ADDR}" "${FUNCTION_DIR}/host_addr"
+	write_if_present RNDIS "${FUNCTION_DIR}/os_desc/interface.rndis/compatible_id"
+	write_if_present 5162001 "${FUNCTION_DIR}/os_desc/interface.rndis/sub_compatible_id"
+
+	echo 1 > "${GADGET_DIR}/os_desc/use"
+	echo 0xcd > "${GADGET_DIR}/os_desc/b_vendor_code"
+	echo MSFT100 > "${GADGET_DIR}/os_desc/qw_sign"
+	[ -e "${GADGET_DIR}/os_desc/b.1" ] || ln -s "${CONFIG_DIR}" "${GADGET_DIR}/os_desc/b.1"
+
+	[ -e "${CONFIG_DIR}/f1" ] || ln -s "${FUNCTION_DIR}" "${CONFIG_DIR}/f1"
+
+	echo "${UDC}" > "${GADGET_DIR}/UDC"
+	configure_usb0
+}
+
+stop_gadget()
+{
+	[ -d "${GADGET_DIR}" ] || return 0
+	echo "" > "${GADGET_DIR}/UDC" 2>/dev/null || true
+	find "${CONFIG_DIR}" -maxdepth 1 -type l -name 'f*' -delete 2>/dev/null || true
+	rm -f "${GADGET_DIR}/os_desc/b.1" 2>/dev/null || true
+	rmdir "${FUNCTION_DIR}" 2>/dev/null || true
+}
+
+case "${1:-start}" in
+	start)
+		start_gadget
+		;;
+	stop)
+		stop_gadget
+		;;
+	restart|reload)
+		stop_gadget
+		start_gadget
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart}" >&2
+		exit 1
+		;;
+esac

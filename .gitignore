@@ -1,6 +1,7 @@
 *.7z
 *.gz
 /output/
+/out/
 /ubuntu/
 /rockdev
 /.codex

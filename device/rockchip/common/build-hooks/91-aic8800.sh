@@ -24,7 +24,7 @@ build_hook() {
 	TOOLCHAIN="${RK_KERNEL_TOOLCHAIN:-$RK_SDK_DIR/prebuilts/gcc/linux-x86/arm/gcc-arm-10.3-2021.07-x86_64-arm-none-linux-gnueabihf/bin/arm-none-linux-gnueabihf-}"
 	make KDIR="$KERNEL_DIR" ARCH="${RK_KERNEL_ARCH:-arm}" \
 		CROSS_COMPILE="$TOOLCHAIN" \
-		KCFLAGS="-Wno-error=missing-prototypes" \
+		KCFLAGS="-Wno-error=missing-prototypes -Wno-error=implicit-fallthrough" \
 		modules
 	# Install into the modules/firmware staging tree for rootfs.
 	KVER="$(make -s -C "$KERNEL_DIR" ARCH="${RK_KERNEL_ARCH:-arm}" kernelrelease)"
@@ -43,6 +43,10 @@ build_hook() {
 	mkdir -p "$FWDEST"
 	if [ -d "$RK_SDK_DIR/external/rkwifibt/firmware/aicsemi" ]; then
 		cp -r "$RK_SDK_DIR/external/rkwifibt/firmware/aicsemi/"* "$FWDEST/" 2>/dev/null || true
+	fi
+	if [ -d "$FWDEST/aic8800DC" ]; then
+		rm -rf "$MODROOT/lib/firmware/aic8800DC"
+		cp -a "$FWDEST/aic8800DC" "$MODROOT/lib/firmware/aic8800DC"
 	fi
 	depmod -b "$MODROOT" "$KVER"
 	popd >/dev/null

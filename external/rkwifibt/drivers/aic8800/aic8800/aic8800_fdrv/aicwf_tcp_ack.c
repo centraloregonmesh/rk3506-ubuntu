@@ -1,7 +1,13 @@
 #include "aicwf_tcp_ack.h"
 //#include"rwnx_tx.h"
 //#include "aicwf_tcp_ack.h"
+#include <linux/timer.h>
 #include "rwnx_defs.h"
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0)
+#define del_timer(timer) timer_delete(timer)
+#endif
+
 extern int intf_tx(struct rwnx_hw *priv, struct msg_buf *msg);
 struct msg_buf *intf_tcp_alloc_msg(struct msg_buf *msg)
 {

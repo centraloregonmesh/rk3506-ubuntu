@@ -10,6 +10,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/ieee80211.h>
 #include <linux/etherdevice.h>
+#include <linux/timer.h>
 #include <net/ieee80211_radiotap.h>
 
 #include "rwnx_defs.h"
@@ -28,6 +29,15 @@
 
 #ifndef IEEE80211_MAX_CHAINS
 #define IEEE80211_MAX_CHAINS 4
+#endif
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0)
+#ifndef from_timer
+#define from_timer(var, callback_timer, timer_fieldname) \
+	timer_container_of(var, callback_timer, timer_fieldname)
+#endif
+#define del_timer_sync(timer) timer_delete_sync(timer)
+#define del_timer(timer) timer_delete(timer)
 #endif
 
 u8 dhcped = 0;
@@ -2234,8 +2244,13 @@ check_len_update:
 		hdr = (struct ieee80211_hdr *)(skb->data + msdu_offset);
 		rwnx_vif = rwnx_rx_get_vif(rwnx_hw, hw_rxhdr->flags_vif_idx);
 		if (rwnx_vif) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 18, 0)
+			cfg80211_rx_spurious_frame(rwnx_vif->ndev, hdr->addr2,
+						   -1, GFP_ATOMIC);
+#else
 			cfg80211_rx_spurious_frame(rwnx_vif->ndev, hdr->addr2,
 						   GFP_ATOMIC);
+#endif
 		}
 		goto end;
 	}
@@ -2356,9 +2371,15 @@ check_len_update:
 
 				if (hw_rxhdr->flags_is_4addr &&
 				    !rwnx_vif->use_4addr) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 18, 0)
+					cfg80211_rx_unexpected_4addr_frame(
+						rwnx_vif->ndev, sta->mac_addr,
+						-1, GFP_ATOMIC);
+#else
 					cfg80211_rx_unexpected_4addr_frame(
 						rwnx_vif->ndev, sta->mac_addr,
 						GFP_ATOMIC);
+#endif
 				}
 			}
 

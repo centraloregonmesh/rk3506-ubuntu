@@ -223,8 +223,12 @@ build_wifibt()
 	if [[ "$RK_WIFIBT_MODULES" =~ "AIC" ]]; then
 		echo "building AIC8800"
 		AIC_DRV="$RKWIFIBT_DIR/drivers/aic8800/aic8800"
-		$KMAKE M=$AIC_DRV modules
-		$KMAKE M=$AIC_DRV INSTALL_MOD_PATH="$RK_OUTDIR/kernel-modules" modules_install
+		$KMAKE M=$AIC_DRV \
+			KCFLAGS="-Wno-error=missing-prototypes -Wno-error=implicit-fallthrough" \
+			modules
+		$KMAKE M=$AIC_DRV \
+			KCFLAGS="-Wno-error=missing-prototypes -Wno-error=implicit-fallthrough" \
+			INSTALL_MOD_PATH="$RK_OUTDIR/kernel-modules" modules_install
 	fi
 
 	if [[ "$RK_WIFIBT_MODULES" = "RTL8188FU" ]];then
@@ -257,7 +261,8 @@ build_wifibt()
 		$KMAKE M=$RKWIFIBT_DIR/drivers/rtl8852be modules
 	fi
 
-	if ! [[ "$RK_KERNEL_VERSION_RAW" = "6.1" ]];then
+	if ! [[ "$RK_KERNEL_VERSION_RAW" = "6.1" ]] && \
+		! [[ "$RK_WIFIBT_MODULES" =~ "AIC" ]];then
 		echo "building realtek bt drivers"
 		$KMAKE M=$RKWIFIBT_DIR/drivers/bluetooth_uart_driver
 		if [ -n "$WIFI_USB" ]; then
@@ -417,6 +422,16 @@ build_wifibt()
 			cp -r "$RKWIFIBT_DIR/firmware/aicsemi/"* \
 				"$TARGET_DIR/lib/firmware/aicsemi/" 2>/dev/null || true
 		fi
+		if [ -d "$TARGET_DIR/lib/firmware/aicsemi/aic8800DC" ]; then
+			rm -rf "$TARGET_DIR/lib/firmware/aic8800DC"
+			cp -a "$TARGET_DIR/lib/firmware/aicsemi/aic8800DC" \
+				"$TARGET_DIR/lib/firmware/aic8800DC"
+		fi
+		for ko in aic_load_fw.ko aic8800_fdrv.ko; do
+			found=$(find "$TARGET_DIR/lib/modules/$KVER" -name "$ko" \
+				-type f 2>/dev/null | head -n1)
+			[ -z "$found" ] || cp "$found" "$TARGET_DIR/lib/modules/$ko"
+		done
 		# Refresh module dependency metadata inside the target rootfs
 		if command -v depmod >/dev/null 2>&1; then
 			depmod -b "$TARGET_DIR" "$KVER" || true

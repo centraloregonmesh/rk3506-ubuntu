@@ -15,6 +15,11 @@
 
 #include "rwnx_defs.h"
 
+struct rwnx_cmd *rwnx_cmd_malloc(void);
+void rwnx_cmd_free(struct rwnx_cmd *cmd);
+int rwnx_init_cmd_array(void);
+void rwnx_free_cmd_array(void);
+
 int rwnx_send_reset(struct rwnx_hw *rwnx_hw);
 int rwnx_send_start(struct rwnx_hw *rwnx_hw);
 int rwnx_send_version_req(struct rwnx_hw *rwnx_hw, struct mm_version_cfm *cfm);

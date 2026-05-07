@@ -1,0 +1,127 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Minimal Luckfox Lyra Ultra bring-up device tree for RK3506 6.12 tests.
+ */
+
+/dts-v1/;
+
+#include "rk3506-luckfox-lyra-ultra.dtsi"
+
+/ {
+	model = "Luckfox Lyra Ultra Minimal";
+	compatible = "rockchip,rk3506g-demo-display-control", "rockchip,rk3506";
+
+	chosen {
+		bootargs = "earlycon=uart8250,mmio32,0xff0a0000 console=tty1 root=/dev/mmcblk0p3 rootfstype=ext4 rootwait";
+	};
+};
+
+&adc_keys {
+	status = "disabled";
+};
+
+&acdcdig_dsm {
+	status = "disabled";
+};
+
+&audio_codec {
+	status = "disabled";
+};
+
+&display_subsystem {
+	status = "disabled";
+};
+
+&dsi {
+	status = "disabled";
+};
+
+&dsi_dphy {
+	status = "disabled";
+};
+
+&dsi_in_vop {
+	status = "disabled";
+};
+
+&fspi {
+	status = "disabled";
+};
+
+&gmac1 {
+	phy-mode = "rmii";
+	clock_in_out = "output";
+
+	snps,reset-gpio = <&gpio1 RK_PD0 GPIO_ACTIVE_LOW>;
+	snps,reset-active-low;
+	snps,reset-delays-us = <0 20000 100000>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&eth_rmii1_miim_pins &eth_rmii1_tx_bus2_pins &eth_rmii1_rx_bus2_pins &eth_rmii1_clk_pins>;
+
+	phy-handle = <&rmii_phy1>;
+	status = "okay";
+};
+
+&i2c2 {
+	status = "disabled";
+};
+
+&mdio1 {
+	rmii_phy1: phy@1 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0x1>;
+	};
+};
+
+&pwm0_4ch_2 {
+	status = "disabled";
+};
+
+&rga2 {
+	status = "disabled";
+};
+
+&route_dsi {
+	status = "disabled";
+};
+
+&sai3 {
+	status = "disabled";
+};
+
+&sai4 {
+	status = "disabled";
+};
+
+&saradc {
+	status = "disabled";
+};
+
+&tsadc {
+	status = "disabled";
+};
+
+&u2phy_otg0 {
+	status = "disabled";
+};
+
+&u2phy_otg1 {
+	status = "disabled";
+};
+
+&usb20_otg0 {
+	status = "disabled";
+};
+
+&usb20_otg1 {
+	status = "disabled";
+};
+
+&usb2phy {
+	status = "disabled";
+};
+
+&vop {
+	status = "disabled";
+};

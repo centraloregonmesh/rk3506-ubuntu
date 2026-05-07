@@ -9,7 +9,7 @@ do_insmod()
 		if [ "$1" = "rk960" ]; then
 			insmod "$1.ko" fw_no_sleep=1
 		else
-			insmod "$1.ko"
+			modprobe "$1" 2>/dev/null || insmod "$1.ko"
 		fi
 		sleep "${2:-0}"
 	fi
@@ -170,6 +170,10 @@ do_start_bt()
 				usb) start_bt_rtk_usb;;
 				*) start_bt_rtk_uart;;
 			esac
+			;;
+		Aicsemi)
+			echo "AIC Bluetooth is handled by the combo firmware"
+			return 0
 			;;
 		*)
 			echo "Unknown Wi-Fi/BT chip, fallback to Broadcom..."

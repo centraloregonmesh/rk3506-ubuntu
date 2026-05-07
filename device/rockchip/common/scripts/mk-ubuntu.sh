@@ -50,6 +50,14 @@ RUN_NOTICE "e2fsck -fy  $EXT4_IMAGE"
 RUN_NOTICE "tune2fs -m 0  $EXT4_IMAGE"
 RUN_NOTICE "e2fsck -fy  $EXT4_IMAGE"
 
+if [ "${RK_UBUNTU_REFRESH_EXT4_JOURNAL:-y}" != n ]; then
+	# Recreate a clean journal while preserving metadata_csum.
+	RUN_NOTICE "tune2fs -O ^has_journal $EXT4_IMAGE"
+	RUN_NOTICE "e2fsck -fy $EXT4_IMAGE"
+	RUN_NOTICE "tune2fs -j $EXT4_IMAGE"
+	RUN_NOTICE "e2fsck -fy $EXT4_IMAGE"
+fi
+
 # Use ubuntu output dir as image output dir
 rm -rf "$ROOTFS_OUTPUT_DIR"
 ln -rsf "$UBUNTU_OUTPUT_DIR" "$ROOTFS_OUTPUT_DIR"
